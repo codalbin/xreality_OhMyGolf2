@@ -4,57 +4,49 @@ using UnityEngine;
 
 public class collision : MonoBehaviour
 {
-    //// Start is called before the first frame update
-    //void Start()
-    //{
-
-    //}
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
-    //public Vector3 moveDirection = new Vector3(1, 0, 0); // Direction du mouvement
-    //public float moveSpeed = 5f; // Vitesse du mouvement
-
-    //void OnCollisionEnter(Collision collision)
-    //{
-    //    // Vérifie si l'objet qui entre en collision a le tag souhaité
-    //    if (collision.gameObject.CompareTag("Enemy"))
-    //    {
-    //        // Applique un mouvement à cet objet
-    //        transform.Translate(moveDirection * moveSpeed * Time.deltaTime);
-    //    }
-    //}
 
     public float forceMultiplier = 10f; // Multiplieur pour ajuster la force appliquée
 
     private Rigidbody rb;
 
-    public GameObject golfFlag;  // Référence à l'objet golf_flag
-    private Renderer golfFlagRenderer;
+    private Dictionary<Collider, float> ignoredCollisions = new Dictionary<Collider, float>();
 
     void Start()
     {
         // Obtenir le Rigidbody de l'objet
         rb = GetComponent<Rigidbody>();
+    }
 
-        // S'assurer qu'on a une référence à l'objet golf_flag et obtenir son Renderer
-        if (golfFlag != null)
+    void Update()
+    {
+        List<Collider> toReactivate = new List<Collider>();
+
+        foreach (var entry in ignoredCollisions)
         {
-            golfFlagRenderer = golfFlag.GetComponent<Renderer>();
+            if (Time.time - entry.Value >= 0.05f)
+            {
+                Physics.IgnoreCollision(entry.Key, GetComponent<Collider>(), false); // Reactive la collision
+                toReactivate.Add(entry.Key); // Ajoute a la liste de suppression
+            }
         }
-        else
+
+        foreach (var collider in toReactivate)
         {
-            Debug.LogError("golfFlag n'est pas assigné dans l'inspecteur.");
+            ignoredCollisions.Remove(collider);
         }
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.tag == "Enemy")
+        Collider otherCollider = collision.collider;
+
+        if (ignoredCollisions.ContainsKey(otherCollider))
+        {
+            // Ignore la collision
+            return;
+        }
+
+        if (otherCollider.CompareTag( "Enemy"))
         {
             Debug.Log("Golf collision enemy");
             // Calculer la force de la collision
@@ -62,37 +54,9 @@ public class collision : MonoBehaviour
 
             // Appliquer une force proportionnelle à l'impact, ajustée par le multiplicateur
             rb.AddForce(collisionForce * forceMultiplier, ForceMode.Impulse);
-        }
 
-        if (collision.gameObject.name == "hole")
-        {
-            // Vérifier si le Renderer de golf_flag existe
-            if (golfFlagRenderer != null)
-            {
-                // Changer la couleur de l'objet "golf_flag" en une couleur spécifique
-                golfFlagRenderer.material.color = Color.green;  // Par exemple, changer la couleur en rouge
-            }
-            else
-            {
-                Debug.LogError("Le Renderer de golfFlag est introuvable.");
-            }
-        }
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject.name == "hole")
-        {
-            // Vérifier si le Renderer de golf_flag existe
-            if (golfFlagRenderer != null)
-            {
-                // Changer la couleur de l'objet "golf_flag" en une couleur spécifique
-                golfFlagRenderer.material.color = Color.green;  // Par exemple, changer la couleur en rouge
-            }
-            else
-            {
-                Debug.LogError("Le Renderer de golfFlag est introuvable.");
-            }
+            Physics.IgnoreCollision(otherCollider, GetComponent<Collider>(), true);
+            ignoredCollisions[otherCollider] = Time.time;
         }
     }
 }
