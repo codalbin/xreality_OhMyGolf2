@@ -67,7 +67,8 @@ public class collision : MonoBehaviour
                 //hitDirection.x = hitDirection.z;
                 //hitDirection.z *= 0.15f;
                 //hitDirection.z = hitDirectionx;
-                //hitDirection.z = 0;
+                hitDirection.y = 0;
+                hitDirection.z = 0;
 
                 Vector3 worldHitDirection = collision.transform.TransformDirection(hitDirection);
 
